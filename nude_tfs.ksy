@@ -1,0 +1,1 @@
+D:/Documents/Kaitai/Formats/NUDE/nude_tfs.ksy
