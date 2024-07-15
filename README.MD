@@ -14,19 +14,21 @@ Unpacker and packer for `.tfs` files found in the Xbox game
 
 ### Examples:
 
-Extract tfs files in directory:
-```
+Extract `.tfs` files in directory:
+```batch
 python main.py --extract --input=TFS --output=EXTRACTED
 ```
 ---
 
-Create tfs from extracted:
+Create `.tfs` from extracted directory:
 ```batch
 python main.py --create --input=EXTRACTED --output=CREATED
 ```
 
+---
+
 Extract `SCENARIO.tfs`
-```
+```batch
 python main.py --extract --input=SCENARIO.tfs --output=SCENARIO
 ```
 

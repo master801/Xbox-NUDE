@@ -15,8 +15,8 @@ def create_tfs(tfs_files: list[str], tfs_metadata_files: list[str], name: str, o
     io_tfs: io.BytesIO = io.BytesIO()
 
     # magic / header section
-    io_tfs.write(b'tnFS')  # 4
-    io_tfs.write(struct.pack('<I', len(tfs_files)))  # divide by 2 since we expect metadata json files
+    io_tfs.write(b'tnFS')  # 4 bytes
+    io_tfs.write(struct.pack('<I', len(tfs_files)))
     io_tfs.write(struct.pack('<I', 0x10))  # header offset - don't know why this is here tbh
     io_tfs.write(struct.pack('>I', 0xDEADBEEF))  # tfs entries section size - dummy packing
 
@@ -35,7 +35,7 @@ def create_tfs(tfs_files: list[str], tfs_metadata_files: list[str], name: str, o
         del discard
 
         discard: int = io_tfs.tell()
-        with open(tfs_metadata_file, mode='rt+', encoding='utf-8') as io_tfs_metadata:
+        with open(tfs_metadata_file, mode='rt', encoding='utf-8') as io_tfs_metadata:
             tfs_metadata: dict = json.loads(io_tfs_metadata.read())
             pass
         io_tfs.seek(0x10 + (i * 0x20) + 0x10)  # idk_1
@@ -114,22 +114,35 @@ def create_tfs(tfs_files: list[str], tfs_metadata_files: list[str], name: str, o
 
 
 def create(_input: str, output_dir: str):
+    if not os.path.exists(output_dir):
+        print('Directory \"{output_dir}\" does not exist.')
+        print('Creating...')
+        os.makedirs(output_dir)
+        print('Done creating\n')
+        pass
+
     tfs_files: list[str] = []
     tfs_metadata_files: list[str] = []
-    for i in os.scandir(_input):
-        if i.is_file():
-            if i.name.endswith('.json'):
-                tfs_metadata_files.append(i.path)
+    for i in glob.glob('*', root_dir=_input):
+        fp = os.path.join(_input, i)
+        if os.path.isfile(fp):
+            if i.endswith('.json'):
+                tfs_metadata_files.append(fp)
                 pass
             else:
-                tfs_files.append(i.path)
+                tfs_files.append(fp)
                 pass
             pass
-        elif i.is_dir():
-            create(i.path, output_dir)
+        elif os.path.isdir(fp):
+            create(fp, output_dir)
             pass
+        else:
+            print('Not a file nor directory?!!!')
+            print(f'\"{fp}\"')
+            pass
+        del fp
+        del i
         continue
-    del i
 
     if len(tfs_files) != len(tfs_metadata_files):
         print('Not equal!')
@@ -165,6 +178,8 @@ def extract_tfs(root_dir: str, path_tfs: str, output_dir: str):
         pass
     folder = os.path.join(output_dir, folder)
     if not os.path.isdir(folder):
+        print(f'Directory \"{folder}\" does not exist!')
+        print('Creating...\n')
         os.makedirs(folder)
         pass
     with open(path, mode='rb+') as io_tfs:
@@ -180,7 +195,7 @@ def extract_tfs(root_dir: str, path_tfs: str, output_dir: str):
                 buffer += buffer_byte
                 buffer_byte = io_tfs.read(1)
                 continue
-            tfs_name: str = buffer.decode('ascii')  # Japanese game - but uses ascii for file names...
+            tfs_name: str = buffer.decode('ascii')  # Japanese game, but uses ascii for file names...
 
             tfs_fp: str = os.path.join(folder, tfs_name)
             if os.path.isfile(tfs_fp):
@@ -226,10 +241,14 @@ def extract(_input: str, output_dir: str):
         pass
     elif os.path.isdir(_input):
         for i in glob.glob('*.tfs', root_dir=_input, recursive=False):
-            print(f'Extracting tfs file \"{i}\"...')
+            print(f'Extracting tfs file \"{i}\"...\n')
             extract_tfs(_input, i, output_dir)
             print('Done extracting!\n')
             continue
+        pass
+    else:
+        print('Not a file nor directory?!')
+        print('This should not happen!')
         pass
     return
 
